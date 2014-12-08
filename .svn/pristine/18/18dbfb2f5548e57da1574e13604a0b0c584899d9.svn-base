@@ -1,0 +1,31 @@
+package ca.uwaterloo.pathFinding;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import android.graphics.PointF;
+import ca.uwaterloo.mapper.NavigationalMap;
+
+public abstract class PathFinding{
+	protected NavigationalMap map;
+	protected PointF org;
+	protected PointF des;
+	
+	public PathFinding(NavigationalMap map, PointF org, PointF des) {
+		this.org = org;
+		this.des = des;
+		this.map = map;
+	}
+	
+	public List<PointF> getPath() {
+		if (map.calculateIntersections(org, des).size() == 0) {
+			List<PointF> path = new ArrayList<>();
+			path.add(org);
+			path.add(des);
+			return path;
+		}
+		return calculatePath();
+	}
+	
+	protected abstract List<PointF> calculatePath();
+}

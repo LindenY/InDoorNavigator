@@ -1,0 +1,47 @@
+package ca.uwaterloo.pathFinding;
+
+import java.util.List;
+
+import android.graphics.PointF;
+import ca.uwaterloo.mapper.MapView;
+import ca.uwaterloo.mapper.NavigationalMap;
+import ca.uwaterloo.mapper.PositionListener;
+import ca.uwaterloo.pathFinding.AStar.AStarPathFinding;
+import ca.uwaterloo.pathFinding.AStar.Grid;
+
+public class DefaultPositionListener implements PositionListener{
+
+	private PointF org;
+	private PointF des;
+
+	@Override
+	public void originChanged(MapView source, PointF loc) {
+		source.setUserPoint(loc);
+		org = loc;
+		onEndPointsChange(source);
+	}
+
+	@Override
+	public void destinationChanged(MapView source, PointF dest) {
+		des = dest;
+		onEndPointsChange(source);
+	}
+	
+	private void onEndPointsChange(MapView mapView) {
+		if (org != null && des != null) {
+			AStarPathFinding pf = new AStarPathFinding(mapView.getMap(), org, des);
+			List<PointF> path = pf.getPath();
+			if (path != null) {
+				mapView.setUserPath(path);
+				
+				mapView.removeAllLabeledPoints();
+				for (Grid g : pf.openList) {
+					mapView.addLabeledPoint(g.center, "O");
+				}
+				for (Grid g: pf.closeList) {
+					mapView.addLabeledPoint(g.center, "C");
+				}
+			}
+		}
+	}
+}

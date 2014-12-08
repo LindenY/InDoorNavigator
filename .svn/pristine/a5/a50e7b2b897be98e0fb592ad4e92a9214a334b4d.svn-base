@@ -1,0 +1,128 @@
+package ca.uwaterloo.pathFinding.AStar;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+import android.graphics.PointF;
+import android.util.Log;
+import ca.uwaterloo.mapper.InterceptPoint;
+import ca.uwaterloo.mapper.NavigationalMap;
+import ca.uwaterloo.pathFinding.PathFinding;
+
+public class AStarPathFinding extends PathFinding{
+	
+	public List<Grid> openList;
+	public List<Grid> closeList;
+	
+	private Grid startingGrid;
+	private Grid currentGird;
+	private Grid endingGrid;
+	
+	private int step;
+	
+	public AStarPathFinding(NavigationalMap map, PointF org, PointF des) {
+		super(map, org, des);
+		
+		openList = new ArrayList<>();
+		closeList = new ArrayList<>();
+		
+		startingGrid = Grid.findGridWithMapAndLocation(org);
+		endingGrid = Grid.findGridWithMapAndLocation(des);
+	}
+
+	@Override
+	protected List<PointF> calculatePath() {
+		openList.clear();
+		closeList.clear();
+		openList.add(startingGrid);
+		if (moveForward()) {
+			Grid g = currentGird;
+			List<PointF> paths = new ArrayList<>();
+			paths.add(g.center);
+			while (g.getParent() != null) {
+				g = g.getParent();
+				paths.add(g.center);
+			}
+			return paths;
+		}
+		return null;
+	}
+	
+	private boolean moveForward() {
+		currentGird = openList.get(0);
+		if (currentGird.equals(endingGrid)) {
+			return true;
+		}
+		openList.remove(currentGird);
+		closeList.add(currentGird);
+		
+		List<Grid> surrounding = getSurroundingGrids(currentGird);
+		if (surrounding.size() == 0 && openList.size() == 0) {
+			return false;
+		}
+		for (Grid g : surrounding) {
+			Grid existGrid = getEqualGridInList(openList, g);
+			if (existGrid != null) {
+				if (g.getG() < existGrid.getG()) {
+					existGrid.setParent(currentGird);
+					Collections.sort(openList);
+				}
+			} else {
+				addGridToOpenList(g);
+			}
+		}
+		return moveForward();
+		
+		/*step ++;
+		if (step == 20) {
+			return true;
+		} else {
+			Log.i("CurrentGrid(" + step + ")", currentGird.toString());
+			for (int i=0; i<openList.size(); i++) {
+				Log.i("OpenList(" + i +")", openList.get(i).toString());
+			}
+			return moveForward();
+		}*/
+	}
+	
+	private void addGridToOpenList(Grid newGrid) {
+		int size = openList.size();
+		if (size == 0) {
+			openList.add(newGrid);
+			return;
+		}
+		for (int i=size-1; i>=0; i--) {
+			if (openList.get(i).getF() < newGrid.getF()) {
+				openList.add(i+1, newGrid);
+				return;
+			}else if (i == 0) {
+				openList.add(0, newGrid);
+			}
+		}
+	}
+	
+	private List<Grid> getSurroundingGrids(Grid grid) {
+		List<Grid> surrounding = grid.getSurroundingGrids();
+		List<Grid> walkableSurronding = new ArrayList<>();
+		for (Grid g : surrounding) {
+			List<InterceptPoint> interPoints = map.calculateIntersections(grid.center, g.center);
+			if (interPoints.size() == 0
+					&& (getEqualGridInList(closeList, g) == null)) {
+				g.setHValueWithEndingGrid(endingGrid);
+				g.setParent(grid);
+				walkableSurronding.add(g);
+			}
+		}
+		return walkableSurronding;
+	}
+	
+	private Grid getEqualGridInList(List<Grid> list, Grid grid) {
+		for (Grid g : list) {
+			if (g.equals(grid)) {
+				return g;
+			}
+		}
+		return null;
+	}
+}
